@@ -1,0 +1,199 @@
+{
+  "name": "Chemical Transportation Safety Analysis with AI",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chemical-safety-analysis",
+        "responseMode": "lastNode"
+      },
+      "id": "8310e8f9-dd31-4d5d-9021-6b8c6e33754c",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        256,
+        400
+      ],
+      "webhookId": "c62fa4c6-45a4-4888-8dd0-3534169fb24a"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "id-1",
+              "leftValue": "={{ $json.body.type.trim().toLowerCase() }}",
+              "rightValue": "chemical",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true
+      },
+      "id": "5ada7dd0-68da-48e3-8396-d574e31f69b5",
+      "name": "Check Type",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        480,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "prompt",
+              "value": "=You are a chemical transportation safety expert.\nAnalyze the following scenario:\n\nChemical Name: {{ $json.body.name }}\nHazard Level: {{ $json.body.hazard }}\nTemperature: {{ $json.body.temperature }}\nTransport Method: {{ $json.body.transport }}\n\nProvide:\n- Risk assessment\n- Safety recommendations\n- Regulatory concerns\n- Emergency precautions",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "dd16a711-5611-4a94-8fc1-4efc04ef121d",
+      "name": "Prepare Prompt",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        704,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "={{ $json.prompt }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "b5a0d26f-a74d-4352-863e-d4ae60a19aa9",
+      "name": "OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        928,
+        304
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "9SQNnHIQpgnIjNMz",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.text }}"
+      },
+      "id": "2d45fc81-7cc2-4ff9-b474-1ce4aed8abf5",
+      "name": "Return AI Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1280,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "Unsupported type"
+      },
+      "id": "bb8fae55-4aba-4b6b-83a5-094fb05b85b5",
+      "name": "Return Error Message",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        704,
+        496
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Check Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Type": {
+      "main": [
+        [
+          {
+            "node": "Prepare Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Error Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Prompt": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Return AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "pinData": {},
+  "triggerCount": 0,
+  "meta": null
+}
